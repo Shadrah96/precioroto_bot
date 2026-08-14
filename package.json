@@ -1,0 +1,25 @@
+{
+  "name": "chollos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cazador automatico de errores de precio en tiendas espanolas. Avisa por Telegram.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "scan": "node --env-file-if-exists=.env src/cli.ts scan",
+    "add": "node --env-file-if-exists=.env src/cli.ts add",
+    "discover": "node --env-file-if-exists=.env src/cli.ts discover",
+    "list": "node --env-file-if-exists=.env src/cli.ts list",
+    "rm": "node --env-file-if-exists=.env src/cli.ts rm",
+    "check": "node --env-file-if-exists=.env src/cli.ts check",
+    "report": "node --env-file-if-exists=.env src/cli.ts report",
+    "test-telegram": "node --env-file-if-exists=.env src/cli.ts test-telegram",
+    "avatar": "node --env-file-if-exists=.env src/cli.ts avatar",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "playwright": "^1.62.1"
+  }
+}

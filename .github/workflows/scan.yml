@@ -1,0 +1,102 @@
+name: scan
+
+on:
+  schedule:
+    # Cada 30 minutos. GitHub puede retrasarlo unos minutos en horas punta.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Tiendas a revisar, separadas por comas. Vacio = las de la variable STORES'
+        required: false
+        type: string
+      verbose:
+        description: 'Imprimir tambien los productos sin novedad'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Nunca dos scans a la vez: se pisarian al commitear el historico.
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # Chromium solo hace falta para las tiendas con anti-bot. Desde la IP de
+      # GitHub muchas veces las bloquean igual; ver README.
+      - name: Cache de Chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Revisar precios
+        id: scan
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Ajuste fino opcional: Settings > Secrets and variables > Actions > Variables
+          RATIO_ERROR: ${{ vars.RATIO_ERROR }}
+          RATIO_DEAL: ${{ vars.RATIO_DEAL }}
+          CRASH_RATIO: ${{ vars.CRASH_RATIO }}
+          MIN_ABS_DROP: ${{ vars.MIN_ABS_DROP }}
+          MIN_SAMPLES: ${{ vars.MIN_SAMPLES }}
+          COOLDOWN_HOURS: ${{ vars.COOLDOWN_HOURS }}
+          REQUEST_DELAY_MS: ${{ vars.REQUEST_DELAY_MS }}
+          # Pon BROWSER=0 en Variables si prefieres no gastar tiempo en las
+          # tiendas con anti-bot y dejarlas para el runner de casa.
+          BROWSER: ${{ vars.BROWSER }}
+          # Tiendas que cubre ESTE runner. Por defecto solo las dos que funcionan
+          # desde una IP de centro de datos; el resto las lleva el PC de casa.
+          # Cambialo en Settings > Variables si quieres otro reparto.
+          STORES: ${{ vars.STORES || 'mediamarkt,elcorteingles' }}
+        run: |
+          node src/cli.ts scan \
+            ${{ inputs.only && format('--only {0}', inputs.only) || '' }} \
+            ${{ inputs.verbose && '--verbose' || '' }}
+
+      # Se guarda el historico aunque el scan haya fallado a medias: cada lectura cuenta.
+      - name: Guardar historico
+        run: |
+          git config user.name 'chollos-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data
+          if git diff --staged --quiet; then
+            echo 'Sin cambios en el historico.'
+            exit 0
+          fi
+          git commit -m "precios: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && exit 0
+            echo "push fallido, reintento $i"
+            sleep 5
+          done
+          exit 1
+
+      - name: Marcar el run en rojo si el scan fallo
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo '::error::El scan termino con error (mira el log del paso "Revisar precios").'
+          exit 1

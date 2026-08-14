@@ -1,0 +1,7 @@
+.env
+node_modules/
+scan.log
+*.log
+.debug/
+data/*.tmp
+data/history/*.tmp
