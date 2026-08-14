@@ -48,11 +48,16 @@ function withHostLock<T>(host: string, fn: () => Promise<T>): Promise<T> {
   return prev.then(fn).finally(release);
 }
 
-function looksBlocked(status: number, body: string): boolean {
+export function looksBlocked(status: number, body: string): boolean {
+  // Un 403 o un 429 en la ficha publica de un producto solo puede ser anti-bot.
+  // No mires el tamano de la pagina: MediaMarkt devuelve un 403 largo y con
+  // pinta de pagina normal, y clasificarlo como error HTTP corriente hace que
+  // se gasten los reintentos y que nunca se pruebe con navegador.
+  if (status === 403 || status === 429) return true;
   const head = body.slice(0, 6000).toLowerCase();
   if (CAPTCHA_MARKERS.some((m) => head.includes(m))) return true;
-  // Paginas de bloqueo suelen ser diminutas
-  return (status === 403 || status === 503) && body.length < 4000;
+  // Un 503 suele ser sobrecarga real, salvo que venga con pagina de bloqueo.
+  return status === 503 && body.length < 4000;
 }
 
 export interface FetchHtmlOptions {
@@ -112,8 +117,9 @@ export async function fetchHtml(url: string, opts: FetchHtmlOptions = {}): Promi
       }
 
       if (looksBlocked(res.status, body)) {
-        lastError = new FetchError('blocked', `anti-bot (HTTP ${res.status})`);
-        continue;
+        // Insistir con la misma peticion no va a cambiar nada: cortamos ya para
+        // que quien nos llama pueda reintentar con navegador cuanto antes.
+        throw new FetchError('blocked', `anti-bot (HTTP ${res.status})`);
       }
       if (res.status === 404 || res.status === 410) {
         // No tiene sentido reintentar: el producto ya no existe.

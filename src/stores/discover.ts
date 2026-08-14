@@ -12,19 +12,77 @@ import { adapterFor } from './index.ts';
  * que responden.
  */
 
+/**
+ * Cuantos mas terminos, mas productos. Cada busqueda devuelve una pagina de
+ * ~10-40 resultados, asi que el techo real de la lista lo marca esta lista, no
+ * el tiempo de scan. Mezclamos categorias y marcas para no repetir resultados.
+ */
 export const TECH_TERMS = [
+  // portatiles y sobremesa
   'portatil gaming',
+  'portatil hp',
+  'portatil lenovo',
+  'portatil asus',
+  'macbook',
+  'ordenador sobremesa',
+  // moviles
   'movil libre',
+  'iphone',
+  'samsung galaxy',
+  'xiaomi',
+  // tablets y lectores
   'tablet',
+  'ipad',
+  'ebook kindle',
+  // audio
   'auriculares bluetooth',
-  'monitor gaming',
-  'tarjeta grafica',
-  'ssd nvme',
-  'smartwatch',
-  'televisor 55',
-  'teclado mecanico',
-  'robot aspirador',
+  'airpods',
+  'auriculares diadema',
   'altavoz bluetooth',
+  'barra de sonido',
+  // imagen
+  'monitor gaming',
+  'monitor 4k',
+  'televisor 55',
+  'tv oled',
+  'proyector',
+  // componentes
+  'tarjeta grafica',
+  'procesador',
+  'placa base',
+  'memoria ram',
+  'ssd nvme',
+  'disco duro externo',
+  'fuente alimentacion',
+  // perifericos
+  'teclado mecanico',
+  'raton gaming',
+  'silla gaming',
+  'webcam',
+  'microfono',
+  // consolas
+  'playstation 5',
+  'xbox series',
+  'nintendo switch',
+  // wearables
+  'smartwatch',
+  'garmin',
+  'apple watch',
+  // foto y video
+  'camara reflex',
+  'gopro',
+  'dron',
+  // hogar conectado
+  'robot aspirador',
+  'freidora de aire',
+  'cafetera automatica',
+  'aspirador escoba',
+  // movilidad
+  'patinete electrico',
+  // varios
+  'impresora multifuncion',
+  'router wifi 6',
+  'bateria externa',
 ];
 
 interface Source {

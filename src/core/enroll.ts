@@ -1,4 +1,4 @@
-import { eur } from '../config.ts';
+import { eur, ownsStore } from '../config.ts';
 import type { StoreId, WatchItem } from '../types.ts';
 import { fetchPrice, resolveItem } from '../stores/index.ts';
 import {
@@ -99,7 +99,10 @@ export async function addUrls(
           addedAt: new Date().toISOString(),
         };
         fresh.push(item);
-        appendPoint(history, item.id, item.title, price, nowSec);
+        // Solo anotamos la primera lectura si esta tienda es nuestra. Si es del
+        // otro runner, se la dejamos a el: su proximo scan la recogera, y asi
+        // nunca escribimos un fichero que no nos toca.
+        if (ownsStore(store)) appendPoint(history, item.id, item.title, price, nowSec);
         report.added++;
         console.log(`  ✓ [${store}] ${eur(price).padStart(11)}  ${item.title.slice(0, 68)}`);
       }
@@ -108,7 +111,9 @@ export async function addUrls(
 
   if (fresh.length > 0) {
     await saveWatchlist([...watchlist, ...fresh]);
-    await Promise.all(stores.map((s) => saveHistory(s, histories.get(s)!)));
+    await Promise.all(
+      stores.filter(ownsStore).map((s) => saveHistory(s, histories.get(s)!)),
+    );
   }
   return report;
 }

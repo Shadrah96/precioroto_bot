@@ -16,6 +16,17 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
  */
 export const RUNNER = process.env.RUNNER || (process.env.GITHUB_ACTIONS ? 'cloud' : 'local');
 
+/** Tiendas de las que este runner es responsable. null = todas. */
+export const OWNED_STORES: string[] | null = process.env.STORES?.trim()
+  ? process.env.STORES.split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  : null;
+
+/** Si no somos responsables de una tienda, no tocamos sus ficheros. */
+export const ownsStore = (store: string): boolean =>
+  OWNED_STORES === null || OWNED_STORES.includes(store);
+
 export const PATHS = {
   watchlist: path.join(ROOT, 'data', 'watchlist.json'),
   history: path.join(ROOT, 'data', 'history'),
