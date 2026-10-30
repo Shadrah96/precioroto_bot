@@ -1,11 +1,10 @@
 {
-  "at": "2026-10-30T13:19:25.352Z",
+  "at": "2026-10-30T18:43:40.232Z",
   "checked": 63,
-  "ok": 54,
+  "ok": 55,
   "alerts": 0,
   "failures": {
     "http": 4,
-    "blocked": 4,
-    "network": 1
+    "blocked": 4
   }
 }
